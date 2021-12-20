@@ -24,7 +24,7 @@ This function helps determine whether submission is before deadline and convert 
 
 ```
 course_id = 1580035 # could be found in canvas url
-token = '1018~*********' # Sangyu's token
+token = '1018~*********' # token
 ```
 
 2. run the following scripts in the utilites directory:
