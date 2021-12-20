@@ -58,7 +58,7 @@ Additional Information
 
 - short starting sample:
 ```
-base_path = 'https://usfca.instructure.com/api'
+base_path = 'https://lorem.instructure.com/api'
 url = base_path + '/v1/accounts/'
 token = '1018~**'
 header = {'Authorization': 'Bearer ' + token}
