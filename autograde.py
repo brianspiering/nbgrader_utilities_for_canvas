@@ -15,40 +15,26 @@ import sys
 from   nbgrader.apps import NbGraderAPI
 import requests
 
-
-@dataclass
-class Assignment:
-    """Specific assignment for a class"""
-    course_name: str
-    course_id: int 
-    assignment_name: str
-    assignment_id: int
-    
-# Set current variables
-scores = {}
-assignment = 1
-post_to_canvas = True
+canvas_api_token = os.getenv("CANVAS_API_TOKEN")
+course_name = "Lorem"
+course_id   = 1587402
+assignment_name = "1_assignment_regression"
+assignment_id   = 6886889
+post_to_canvas   = False
 grade_individual = False
-# grade_individual = True; 
-# user_id_to_grade = 6197818
-
-# Setup Canvas API
-# Token could be generated: `Account` -> `Settings` -> `Approved Integrations` -> 'New Access Token'
-# https://lorem.instructure.com/profile/settings
-token = ''
-
+# grade_individual, user_id_to_grade = True; 6197818
 
 def get_file_names(assignment, grade_individual=False):
     path = Path('./')
     filenames = list(path.glob(f"canvas/{assignment.assignment_name}/*.ipynb"))
     if grade_individual:
         filenames = [filename for filename in filenames if str(user_id_to_grade) in str(filename)]
-    
     return filenames
 
 def grade_students(assignment, filenames):
     nbgrader = NbGraderAPI()
-    print (f"Grading {assignment.assignment_name}…")
+    scores = {}
+    print (f"Grading {assignment.assignment_name} …\n")
     for n, filename in enumerate(filenames, start=1):
 
         # Process filename
@@ -76,7 +62,7 @@ def grade_students(assignment, filenames):
         current_score = nbgrader.get_student_notebook_submissions(assignment_id=assignment.assignment_id, student_id=user_id)[0]['score']
         print(f"{n:> 4} out of {n_students} - Successfully graded score of {current_score:>2.0f} for {canvas_name.title()}")
         scores[canvas_name] = {'user_id':       user_id,
-                            'current_score': current_score}
+                               'current_score': current_score}
 
         # Move file for uploading back to canvas
         autograded_folder = 'autograded'
@@ -97,14 +83,15 @@ def grade_students(assignment, filenames):
                         ))
 
     # Log scores
-    try:
+    if scores_sorted:
         with open(f"{assignment.assignment_name}_scores.json", 'w') as fp:
             json.dump(scores_sorted, fp)
-    except FileNotFoundError as err:
-        print("Error: Need to create file:", str(err).split(" ")[-1])
+        print("Student scores:")
+        pprint(scores_sorted)
+    else:
+        print("There are no scores. Double check.")
 
     print("\nGrading done")
-    pprint(scores_sorted)
     
     return scores
 
@@ -128,21 +115,35 @@ def post_scores(token, assignment, scores):
             print(f"Something wrong with call to Canvas for {canvas_name} / {user_id}")
             sys.exit(1)
 
+
+    """Specific assignment for a class"""
+    course_name: str
+    course_id: int 
+    assignment_name: str
+    assignment_id: int
+
+@dataclass
+class Assignment:
+    """Current assignment metadata"""
+    course_name: str
+    course_id: int 
+    assignment_name: str
+    assignment_id: int
+
 if __name__ == '__main__':
 
-    assignment = Assignment(course_name="Lorem",
-                            course_id=1587402,
-                            assignment_name="1_assignment_regression",
-                            assignment_id=6886889
+    assignment = Assignment(course_name=course_name,
+                            course_id=course_id,
+                            assignment_name=assignment_name,
+                            assignment_id=assignment_id,
                             )
-    print(assignment.assignment_name)
 
-    filenames = get_file_names(assignment)
+    filenames = get_file_names(assignment=assignment)
     
     scores = grade_students(assignment=assignment, 
-                          filenames=filenames)
+                            filenames=filenames)
     
     if post_to_canvas:
-        post_scores(token=token, assignment=assignment, scores=scores)
+        post_scores(token=canvas_api_token, assignment=assignment, scores=scores)
     else:
         print("Scores not posted to Canvas.")

@@ -10,7 +10,9 @@ Canvas is a learning management system (LMS), aka a gradebook. Canvas has a high
 Setup
 ------
 
-- Generate Canvas API token: `account` -> `setting` -> `Approved Integrations`
+- Generate Canvas API token:
+  - https://lorem.instructure.com/profile/settings
+  - `account` -> `setting` -> `Approved Integrations`  -> 'New Access Token'
 
 - Find course id and assignment id:
   - Navigate to the specific assignment on your Canvas page - https://lorem.instructure.com/courses/1580035/assignments/6799280
