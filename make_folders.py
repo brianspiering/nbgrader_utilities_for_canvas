@@ -4,7 +4,7 @@ These functions are helpful in meeting those requirements.
 
 import collections
 import datetime
-import path
+import pathlib
 import os
 import re
 import sys
