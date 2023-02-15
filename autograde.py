@@ -20,26 +20,20 @@ course_name = "Lorem"
 course_id   = 1587402
 assignment_name = "1_assignment_regression"
 assignment_id   = 6886889
-post_to_canvas   = False
-grade_individual = False
-# grade_individual, user_id_to_grade = True; 6197818
+post_to_canvas = False
 
-def get_file_names(assignment, grade_individual=False):
+
+def get_user_ids(assignment):
+    "Get uers ids from submitted files. Also, cleanup filenames for nbgrader."
     path = Path('./')
     filenames = list(path.glob(f"canvas/{assignment.assignment_name}/*.ipynb"))
-    if grade_individual:
-        filenames = [filename for filename in filenames if str(user_id_to_grade) in str(filename)]
-    return filenames
-
-def grade_students(assignment, filenames):
-    nbgrader = NbGraderAPI()
-    scores = {}
-    print (f"Grading {assignment.assignment_name} …\n")
+    user_ids = []
     for n, filename in enumerate(filenames, start=1):
-
+        
         # Process filename
         canvas_name, user_id, unknown_num_2, login_id, *_ = filename.parts[-1].lower().split("_") # `*_` discards how student named file
-
+        user_ids.append(user_id)
+        
         path_submitted = path / "submitted" / user_id / assignment.assignment_name
         if not os.path.exists(path_submitted):
             os.makedirs(path_submitted)
@@ -49,6 +43,14 @@ def grade_students(assignment, filenames):
         shutil.copyfile(src=filename,
                         dst=path / "submitted" / user_id / assignment.assignment_name / file_name_new)
         
+    return user_ids
+
+def grade_students(assignment, user_ids):
+    nbgrader = NbGraderAPI()
+    scores = {}
+    print (f"Grading {assignment.assignment_name} …\n")
+    for n, userid in enumerate(user_ids, start=1):
+
         # Autograde
         nbgrader_result = nbgrader.autograde(assignment_id=assignment.assignment_name, 
                                             student_id=user_id, 
@@ -64,18 +66,6 @@ def grade_students(assignment, filenames):
         scores[canvas_name] = {'user_id':       user_id,
                                'current_score': current_score}
 
-        # Move file for uploading back to canvas
-        autograded_folder = 'autograded'
-        to_upload = 'to_upload'
-
-        filename_orginal = filename.parts[-1]
-        current_path = Path(to_upload) / Path(assignment.assignment_name)
-        if not os.path.exists(current_path):
-            os.makedirs(current_path)
-
-        shutil.copyfile(src=path / autograded_folder / user_id / assignment.assignment_name / file_name_new,
-                        dst=path / to_upload / assignment.assignment_name / filename_orginal)
-
     # Sort scores 
     scores_sorted = dict(sorted(scores.items(),
                         key=lambda x: getitem(x[1], 'current_score'),
@@ -89,13 +79,13 @@ def grade_students(assignment, filenames):
         print("Student scores:")
         pprint(scores_sorted)
     else:
-        print("There are no scores. Double check.")
+        print("There are no scores. Double check that is correct.")
 
     print("\nGrading done")
     
     return scores
 
-def post_scores(token, assignment, scores):
+def post_scores(assignment, scores, token):
     """Post to Canvas via API"""
 
     for n, canvas_name in enumerate(scores, start=1):
@@ -138,12 +128,11 @@ if __name__ == '__main__':
                             assignment_id=assignment_id,
                             )
 
-    filenames = get_file_names(assignment=assignment)
+    user_ids = get_user_ids(assignment=assignment)
     
-    scores = grade_students(assignment=assignment, 
-                            filenames=filenames)
+    scores = grade_students(assignment=assignment, user_ids=user_ids)
     
     if post_to_canvas:
-        post_scores(token=canvas_api_token, assignment=assignment, scores=scores)
+        post_scores(assignment=assignment, scores=scores, token=canvas_api_token)
     else:
         print("Scores not posted to Canvas.")
