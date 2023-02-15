@@ -1,125 +1,148 @@
 """
-Move student submissions around
-
-# Examply
-python score_students.py ../submitted/ ../scores/ <assign_name> <dropbox_name> <assign_id> <month> <day> <assignment_name>
+Automatically grade student's work in Jupyter Notebook using the nbgrader package.
+After grading, automtically post the scores to Canvas (the Learning Management System).
 """
 
+from   dataclasses import dataclass
+import json
+from   operator    import getitem 
 import os
+from   pathlib     import Path
+from   pprint      import pprint
 import shutil
-import subprocess
-import statistics
+import sys
 
-import matplotlib.pyplot as plt
-import pandas as pd
-
-from fetching import *
-from make_folders import *
+from   nbgrader.apps import NbGraderAPI
+import requests
 
 
-def main():
-
-    #############################################
-    #Place the submissions into the right folder#
-    #############################################
-
-    sub_path = sys.argv[1] # example: ../submitted/
-    score_path = sys.argv[2] # example: ../scores/
-    #run = sys.argv[3] # example: True
-    folder_name = sys.argv[3] # example: knn_lab
-    dropbox_file_name = sys.argv[4] # example: Lab-KNN
-    assignment_id = sys.argv[5] # example: 6805538
-    ddl_mon = int(sys.argv[6]) # example: 11
-    ddl_day = int(sys.argv[7]) # example: 4
-    assignment_name = sys.argv[8] # assignment_name
-
-
-    download_dir = '/Users/lorem/Downloads/' # the folder where submission.zip was downloaded to.
+@dataclass
+class Assignment:
+    """Specific assignment for a class"""
+    course_name: str
+    course_id: int 
+    assignment_name: str
+    assignment_id: int
     
-    unzip = 'unzip -d ' + download_dir + dropbox_file_name + ' ' + download_dir + dropbox_file_name + '.zip'
+# Set current variables
+scores = {}
+assignment = 1
+post_to_canvas = True
+grade_individual = False
+# grade_individual = True; 
+# user_id_to_grade = 6197818
 
-    os.system(unzip)
-
-    origin_folder = download_dir + dropbox_file_name + '/'
-
-    # convert the downloaded file modification time to UTC
-    ddl = datetime.datetime(2018,ddl_mon,ddl_day,14) + datetime.timedelta(days=1)
-
-    # create assignment folder for each student
-    assignment_folder(sub_path, folder_name) 
-
-    # create score folder to store grades info
-    scores_folder(score_path, folder_name)  
-
-    # move submissions to the assignment folder
-    place_submission(origin_folder, sub_path, folder_name, assignment_name, score_path, ddl) 
-
-    # delete the unzip folder
-    shutil.rmtree(origin_folder)
-
-    print ('Place Submission Done .. ')
+# Setup Canvas API
+# Token could be generated: `Account` -> `Settings` -> `Approved Integrations` -> 'New Access Token'
+# https://lorem.instructure.com/profile/settings
+token = ''
 
 
-    ###########
-    #autograde#
-    ###########
-
-    assignment_dir = '../'  #the address where db locates in, e.g.: "/Users/shen/Desktop/USF/assignments"
-    empty_sample_add = '../submitted/bspiering/knn_lab/knn_lab.ipynb' #an empty submission
-    autograded_path = '../autograded/'
-
-    # make sure every folder has a file
-    put_file(sub_path, folder_name, empty_sample_add)
-
-    run_new_file = input('New Grading [yes/no]:')
-
-    if run_new_file == 'True':
-        print ('New grading .. ')
-    # if had been graded, delete previous grading info for new grading
-
+def get_file_names(assignment, grade_individual=False):
+    path = Path('./')
+    filenames = list(path.glob(f"canvas/{assignment.assignment_name}/*.ipynb"))
+    if grade_individual:
+        filenames = [filename for filename in filenames if str(user_id_to_grade) in str(filename)]
     
-    new_files(autograded_path, folder_name, run_new_file)
+    return filenames
 
-    # change the working directory into the address where db locates for autograding
-    os.chdir(assignment_dir) 
- 
-    # call 'nbgrader autograde <assignment_name>'
-    subprocess.call(["nbgrader", "autograde", folder_name])
+def grade_students(assignment, filenames):
+    nbgrader = NbGraderAPI()
+    print (f"Grading {assignment.assignment_name}…")
+    for n, filename in enumerate(filenames, start=1):
 
-    print ('%s Grade Done .. '% folder_name)
+        # Process filename
+        canvas_name, user_id, unknown_num_2, login_id, *_ = filename.parts[-1].lower().split("_") # `*_` discards how student named file
 
+        path_submitted = path / "submitted" / user_id / assignment.assignment_name
+        if not os.path.exists(path_submitted):
+            os.makedirs(path_submitted)
 
-    ##########################
-    #summary and upload score#
-    ##########################
+        # Move and rename 
+        file_name_new = assignment.assignment_name+'.ipynb'
+        shutil.copyfile(src=filename,
+                        dst=path / "submitted" / user_id / assignment.assignment_name / file_name_new)
+        
+        # Autograde
+        nbgrader_result = nbgrader.autograde(assignment_id=assignment.assignment_name, 
+                                            student_id=user_id, 
+                                            force=True,  
+                                            create=True)
 
-    # change the working directory back to utilities/
-    # os.chdir(assignment_dir+'utilities')
-    os.chdir('utilities')
+        if nbgrader_result['success'] == False:
+            print(nbgrader_result['log'])
+            sys.exit(1) 
 
-    file_name = 'grades.csv' # grades info file name
-    db_url = 'sqlite:///../gradebook.db' # db address
-    course_id = 1580035 # could be found on canvas url
-    token = 'lorem' 
-    grades_file = score_path + folder_name +'/' + file_name # grades info file address
+        current_score = nbgrader.get_student_notebook_submissions(assignment_id=assignment.assignment_id, student_id=user_id)[0]['score']
+        print(f"{n:> 4} out of {n_students} - Successfully graded score of {current_score:>2.0f} for {canvas_name.title()}")
+        scores[canvas_name] = {'user_id':       user_id,
+                            'current_score': current_score}
 
-    # fetch the student info dataframe
-    student_id = pd.read_csv('students_raw.csv').drop([0])
-    student_id = student_id[['ID', 'SIS User ID', 'SIS Login ID']]
-    id_col = 'SIS Login ID'
+        # Move file for uploading back to canvas
+        autograded_folder = 'autograded'
+        to_upload = 'to_upload'
 
-    # pull score from db
-    fetch_score(db_url, folder_name, grades_file, student_id, id_col) 
+        filename_orginal = filename.parts[-1]
+        current_path = Path(to_upload) / Path(assignment.assignment_name)
+        if not os.path.exists(current_path):
+            os.makedirs(current_path)
 
-    # generate score summary
-    summary(grades_file, score_path, folder_name)
+        shutil.copyfile(src=path / autograded_folder / user_id / assignment.assignment_name / file_name_new,
+                        dst=path / to_upload / assignment.assignment_name / filename_orginal)
 
-    # call canvas api to update score
-    update = input('Updating Score [yes/no]:')
-    if update == 'yes':
-        updating = GradeUpdate(course_id, assignment_id, token)
-        updating.group_grade_update(grades_file)
-    print ('Upload Done .. ')
+    # Sort scores 
+    scores_sorted = dict(sorted(scores.items(),
+                        key=lambda x: getitem(x[1], 'current_score'),
+                        reverse=False # From low to high
+                        ))
+
+    # Log scores
+    try:
+        with open(f"{assignment.assignment_name}_scores.json", 'w') as fp:
+            json.dump(scores_sorted, fp)
+    except FileNotFoundError as err:
+        print("Error: Need to create file:", str(err).split(" ")[-1])
+
+    print("\nGrading done")
+    pprint(scores_sorted)
+    
+    return scores
+
+def post_scores(token, assignment, scores):
+    """Post to Canvas via API"""
+
+    for n, canvas_name in enumerate(scores, start=1):
+        # gernal https://canvas.instructure.com/doc/api/index.html
+        # docs - https://canvas.instructure.com/doc/api/submissions.html#Submission
+        user_id = scores[canvas_name]['user_id']
+        current_score = scores[canvas_name]['current_score']
+        url = f"https://lorem.instructure.com/api/v1/courses/{course_id}/assignments/{assignment.assignment_id}/submissions/{user_id}"
+        headers = {'Authorization': 'Bearer ' + token}
+        data = {'submission[posted_grade]': current_score}
+
+        try:
+            r = requests.put(url=url, headers=headers, data=data)
+            print(f"{n:> 4} out of {n_students} successfully posted to Canvas a score of {current_score:>2.0f} for {canvas_name.title()}")
+        except requests.exceptions.HTTPError as err:
+            print(err)
+            print(f"Something wrong with call to Canvas for {canvas_name} / {user_id}")
+            sys.exit(1)
 
 if __name__ == '__main__':
-    main()
+
+    assignment = Assignment(course_name="Lorem",
+                            course_id=1587402,
+                            assignment_name="1_assignment_regression",
+                            assignment_id=6886889
+                            )
+    print(assignment.assignment_name)
+
+    filenames = get_file_names(assignment)
+    
+    scores = grade_students(assignment=assignment, 
+                          filenames=filenames)
+    
+    if post_to_canvas:
+        post_scores(token=token, assignment=assignment, scores=scores)
+    else:
+        print("Scores not posted to Canvas.")

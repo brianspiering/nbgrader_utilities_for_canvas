@@ -7,14 +7,6 @@ This is a collection of utilities to help run nbgrader and then post student sco
 
 Canvas is a learning management system (LMS), aka a gradebook. Canvas has a high-quality API that allows for the programmatic updating of student grades.
 
-Autograding Steps
-------
-
-1. Create local folders.
-2. Autograde student submissions with nbgrader.
-3. Post student scores to Canvas via the API.
-
-
 Setup
 ------
 
@@ -42,15 +34,8 @@ Example
 ------
 
 ```bash
-python autograde.py ../submitted/ ../scores/ <assign_folder_name> <download_folder> <assign_id> <month> <day> <hw_name>
+python autograde.py 
 ```
-
-- `assign_folder_name`: assignment folder name, e.g., lab1_knn_lab
-- `download_folder`: folder name of dropbox folder, e.g., Lab-KNN
-- `assign_id`: canvas assignment id, found in canvas url, e.g., 6799280
-- `month`: the deadline month info (local time -PST)
-- `day`: the deadline day info (local time -PST)
-- `hw_name`: the name of one homework in the assignment folder, e.g., knn_lab
 
 Useful Links
 ------
