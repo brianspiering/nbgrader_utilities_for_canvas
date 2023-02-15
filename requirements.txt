@@ -1,0 +1,2 @@
+nbgrader==0.8.1
+requests==2.28.2
