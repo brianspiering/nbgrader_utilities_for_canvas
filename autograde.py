@@ -1,11 +1,21 @@
-from make_folders import *
-from fetching import *
+"""
+Move student submissions around
+
+# Examply
+python score_students.py ../submitted/ ../scores/ <assign_name> <dropbox_name> <assign_id> <month> <day> <assignment_name>
+"""
+
 import os
 import shutil
 import subprocess
-import pandas as pd
-import matplotlib.pyplot as plt
 import statistics
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from fetching import *
+from make_folders import *
+
 
 def main():
 
@@ -111,12 +121,5 @@ def main():
         updating.group_grade_update(grades_file)
     print ('Upload Done .. ')
 
-
-
-# format: 
-# python score_pipe.py ../submitted/ ../scores/ <assign_name> <dropbox_name> <assign_id> <month> <day> <assignment_name>
-
-main()
-
-
-
+if __name__ == '__main__':
+    main()

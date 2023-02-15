@@ -1,17 +1,19 @@
+"""nbgrader has very specific requirements for file folder hierachary.
+These functions are helpful in meeting those requirements.
+"""
 
+import collections
+import datetime
+import path
 import os
+import re
 import sys
 import shutil
-import collections
-import re
-import pandas as pd
-import datetime
 
+import pandas as pd
 
 def assignment_folder(sub_path, folder_name):
-    """
-    create the folder for each student for the assignment
-    """
+    """Create the folder for each student for the assignment"""
 
     students_raw = pd.read_csv("students_raw.csv")
     students_raw = students_raw.drop([0])
@@ -22,34 +24,25 @@ def assignment_folder(sub_path, folder_name):
     sis_ids.append('lorem')
 
     for sis_id in sis_ids:
-        #for folder_name in folder_names:
-            # Top level student directory
         student_dir = sub_path + sis_id
         if not os.path.exists(student_dir):
             os.makedirs(student_dir)
 
-            # Assignment level directory  
+        # Assignment level directory  
         assignment_dir = student_dir+'/'+folder_name
         if not os.path.exists(student_dir+'/'+folder_name):
             os.makedirs(assignment_dir)
 
-
 def scores_folder(score_path, folder_name):
-    """
-    generate a new folder to store score information, ../scores/
-    """
+    """Generate a new folder to store score information, ../scores/"""
     
     score_dir = score_path+folder_name
     if not os.path.exists(score_dir):
         os.makedirs(score_dir)
 
-
-def place_submission(origin_folder, sub_path, folder_name, assignment_name, score_path, ddl, record_ref = 'sis_id.txt'):
-
-    """
-    move the submissions from download folder to the right folders, 
-    also make record of the ids without submission.
-    """
+def place_submission(origin_folder, sub_path, folder_name, assignment_name, score_path, ddl, record_ref='sis_id.txt'):
+    """Move the submissions from download folder to the right folders, 
+    also make record of the ids without submission."""
 
     files = os.listdir(origin_folder) # read the file names from the download folder
     multiple_sub = collections.defaultdict(int) # dict for the sake of version update
@@ -57,11 +50,8 @@ def place_submission(origin_folder, sub_path, folder_name, assignment_name, scor
 
     # make the file to record no submission
     with open(score_path+folder_name+'/summary.txt', 'w+') as f:
-
         ref_list = open(record_ref, 'r').read().split(',') # list of student id
         f.write('No submission:\n')
-    f.close()
-
     
     # move the submitted file from download folder to the student's assignment folder
     # correct format - 'John John - jony2_labname.ipynb'
@@ -96,5 +86,3 @@ def place_submission(origin_folder, sub_path, folder_name, assignment_name, scor
     # record the no submission
     with open(score_path+folder_name+'/summary.txt', 'a') as f:
         f.write('\n'.join(ref_list))
-        f.close()
-
