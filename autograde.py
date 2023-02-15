@@ -88,37 +88,30 @@ def grade_students(assignment, user_ids):
 def post_scores(assignment, scores, token):
     """Post to Canvas via API"""
 
-    for n, canvas_name in enumerate(scores, start=1):
-        # gernal https://canvas.instructure.com/doc/api/index.html
-        # docs - https://canvas.instructure.com/doc/api/submissions.html#Submission
-        user_id = scores[canvas_name]['user_id']
-        current_score = scores[canvas_name]['current_score']
-        url = f"https://lorem.instructure.com/api/v1/courses/{course_id}/assignments/{assignment.assignment_id}/submissions/{user_id}"
+    for n, student_name_on_canvas in enumerate(scores, start=1):
+        # general: https://canvas.instructure.com/doc/api/index.html
+        # docs: https://canvas.instructure.com/doc/api/submissions.html#Submission
+        user_id = scores[student_name_on_canvas]['user_id']
+        current_score = scores[student_name_on_canvas]['current_score']
+        url = f"https://lorem.instructure.com/api/v1/courses/{assignment.course_id}/assignments/{assignment.assignment_id}/submissions/{user_id}"
         headers = {'Authorization': 'Bearer ' + token}
         data = {'submission[posted_grade]': current_score}
 
         try:
             r = requests.put(url=url, headers=headers, data=data)
-            print(f"{n:> 4} out of {n_students} successfully posted to Canvas a score of {current_score:>2.0f} for {canvas_name.title()}")
+            print(f"{n:> 4} out of {n_students} successfully posted to Canvas a score of {current_score:>2.0f} for {student_name_on_canvas.title()}")
         except requests.exceptions.HTTPError as err:
             print(err)
-            print(f"Something wrong with call to Canvas for {canvas_name} / {user_id}")
+            print(f"Something wrong with call to Canvas for {student_name_on_canvas} / {user_id}")
             sys.exit(1)
-
-
-    """Specific assignment for a class"""
-    course_name: str
-    course_id: int 
-    assignment_name: str
-    assignment_id: int
 
 @dataclass
 class Assignment:
     """Current assignment metadata"""
     course_name: str
-    course_id: int 
+    course_id:   int 
     assignment_name: str
-    assignment_id: int
+    assignment_id:   int
 
 if __name__ == '__main__':
 
