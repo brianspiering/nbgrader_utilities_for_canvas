@@ -1,15 +1,14 @@
-import pandas as pd
-from nbgrader.api import Gradebook, MissingEntry
 import math
+import os
 import requests
 import shutil
-import os
 import statistics
-import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
+import pandas as pd
+from nbgrader.api import Gradebook, MissingEntry
 
 def put_file(sub_pat, folder_name, empty_sample_add):
-
     """
     Make sure every folder has a file. If no submission, copy an empty submission.
     """
