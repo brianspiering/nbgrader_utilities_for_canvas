@@ -16,7 +16,7 @@ from   nbgrader.apps import NbGraderAPI
 import requests
 
 canvas_api_token = os.getenv("CANVAS_API_TOKEN")
-course_name = "Lorem"
+course_name = "lorem"
 course_id   = 1587402
 assignment_name = "1_assignment_regression"
 assignment_id   = 6886889
@@ -86,11 +86,12 @@ def grade_students(assignment, user_ids):
     return scores
 
 def post_scores(assignment, scores, token):
-    """Post to Canvas via API"""
+    """Post to Canvas via API
+    general: https://canvas.instructure.com/doc/api/index.html
+    docs: https://canvas.instructure.com/doc/api/submissions.html#Submission
+    """
 
     for n, student_name_on_canvas in enumerate(scores, start=1):
-        # general: https://canvas.instructure.com/doc/api/index.html
-        # docs: https://canvas.instructure.com/doc/api/submissions.html#Submission
         user_id = scores[student_name_on_canvas]['user_id']
         current_score = scores[student_name_on_canvas]['current_score']
         url = f"https://lorem.instructure.com/api/v1/courses/{assignment.course_id}/assignments/{assignment.assignment_id}/submissions/{user_id}"
