@@ -1,7 +1,7 @@
 nbgrader + Canvas
 -------
 
-This is a collection of utilities to help run nbgrader and then post student scores to Canvas. 
+This is a collection of utilities to help run nbgrader and then post student scores to Canvas. The promise is to automatically score student submission and then post the scores.
 
 [nbgrader](https://github.com/jupyter/nbgrader) is a package for autograding Jupyter Notebooks. 
 
@@ -44,5 +44,5 @@ Useful Links
 
 - [Canvas API: Getting Started](https://community.canvaslms.com/docs/DOC-14390-canvas-apis-getting-started-the-practical-ins-and-outs-gotchas-tips-and-tricks#jive_content_id_API_Calls_Made_Simple__Curtis_Rose)
 - [Canvas Course API: detailed info](https://canvas.instructure.com/doc/api/courses.html)
-- The url to the what endpoints are available of your specific Canvas instance- https://lorem.instructure.com/doc/api/live
+- [The available endpoints of your a specific Canvas instance](https://lorem.instructure.com/doc/api/live)
   
