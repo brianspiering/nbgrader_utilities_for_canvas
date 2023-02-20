@@ -23,7 +23,7 @@ assignment_id   = 6886889
 post_to_canvas = False
 
 
-def get_user_ids(assignment):
+def setup_grading(assignment):
     "Get uers ids from submitted files. Also, cleanup filenames for nbgrader."
     path = Path('./')
     filenames = list(path.glob(f"canvas/{assignment.assignment_name}/*.ipynb"))
@@ -122,7 +122,7 @@ if __name__ == '__main__':
                             assignment_id=assignment_id,
                             )
 
-    user_ids = get_user_ids(assignment=assignment)
+    user_ids = setup_grading(assignment=assignment)
     
     scores = grade_students(assignment=assignment, user_ids=user_ids)
     
