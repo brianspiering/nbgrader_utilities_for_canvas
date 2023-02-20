@@ -48,7 +48,7 @@ def get_user_ids(assignment):
 def grade_students(assignment, user_ids):
     nbgrader = NbGraderAPI()
     scores = {}
-    print (f"Grading {assignment.assignment_name} …\n")
+    print (f"Grading {assignment.assignment_name} …")
     for n, userid in enumerate(user_ids, start=1):
 
         # Autograde
@@ -81,7 +81,7 @@ def grade_students(assignment, user_ids):
     else:
         print("There are no scores. Double check that is correct.")
 
-    print("\nGrading done")
+    print("Grading done")
     
     return scores
 
